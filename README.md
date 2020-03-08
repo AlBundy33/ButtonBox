@@ -26,3 +26,5 @@ original code: https://github.com/AM-STUDIO/32-FUNCTION-BUTTON-BOX
 Fo build instructions see also amstudios video: https://www.youtube.com/watch?v=Z7Sc4MJ8RPM
 
 You have to install this library in Arduino IDE: https://github.com/MHeironimus/ArduinoJoystickLibrary
+
+To install Keypad.h see also https://forum.arduino.cc/index.php?topic=511429.0 
