@@ -23,10 +23,11 @@ where these buttons are
 
 original code: https://github.com/AM-STUDIO/32-FUNCTION-BUTTON-BOX
 
-Fo build instructions see also amstudios video: https://www.youtube.com/watch?v=Z7Sc4MJ8RPM
+For build instructions see also amstudios video: https://www.youtube.com/watch?v=Z7Sc4MJ8RPM
 
 You have to install this library in Arduino IDE: https://github.com/MHeironimus/ArduinoJoystickLibrary
 
 To install Keypad.h see also https://forum.arduino.cc/index.php?topic=511429.0 
 
+For PS4 and XBox compatibility it seems that using Keyboard.h is better than Joystick.h
 https://forums.codemasters.com/topic/41266-f-yeahdiy-button-box-ps4-done-and-working/
