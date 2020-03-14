@@ -1,106 +1,82 @@
-//BUTTON BOX
-//USE w ProMicro
-//Tested in WIN10 + Assetto Corsa
-//AMSTUDIO
-//20.8.17
+// Button Box
+// usw with ProMicro
 
+// enable two functions per button (short and long press)
+#define ENABLE_DOUBLE_FUNCTION
+// comment this line if you want to simulate a keyboard instead of a joystick
+#define ENABLE_JOYSTICK
+
+// library to handle the matrix
 #include <Keypad.h>
-// for xbox and ps4 compatibility we may have to use Keyboard.h
+// library to work with rotary encoders
+#include <RotaryEncoder.h>
+#ifdef ENABLE_JOYSTICK
 #include <Joystick.h>
-
-#define ENABLE_PULLUPS
-#define NUMROTARIES 4
-#define NUMBUTTONS 20
-#define NUMROWS 3
-#define NUMCOLS 4
-
-byte buttons[NUMROWS][NUMCOLS] = {
-  { 0, 1, 2, 3},
-  { 4, 5, 6, 7},
-  { 8, 9, 10, 11},
-};
-
-struct rotariesdef {
-  byte pin1;
-  byte pin2;
-  int ccwchar;
-  int cwchar;
-  volatile unsigned char state;
-};
-
-rotariesdef rotaries[NUMROTARIES] {
-  {1, 0, 12, 13, 0},
-  {2, 3, 14, 15, 0},
-  {4, 5, 16, 17, 0},
-  {6, 7, 18, 19, 0},
-};
-
-#define DIR_CCW 0x10
-#define DIR_CW 0x20
-#define R_START 0x0
-
-#ifdef HALF_STEP
-#define R_CCW_BEGIN 0x1
-#define R_CW_BEGIN 0x2
-#define R_START_M 0x3
-#define R_CW_BEGIN_M 0x4
-#define R_CCW_BEGIN_M 0x5
-const unsigned char ttable[6][4] = {
-  // R_START (00)
-  {R_START_M,            R_CW_BEGIN,     R_CCW_BEGIN,  R_START},
-  // R_CCW_BEGIN
-  {R_START_M | DIR_CCW, R_START,        R_CCW_BEGIN,  R_START},
-  // R_CW_BEGIN
-  {R_START_M | DIR_CW,  R_CW_BEGIN,     R_START,      R_START},
-  // R_START_M (11)
-  {R_START_M,            R_CCW_BEGIN_M,  R_CW_BEGIN_M, R_START},
-  // R_CW_BEGIN_M
-  {R_START_M,            R_START_M,      R_CW_BEGIN_M, R_START | DIR_CW},
-  // R_CCW_BEGIN_M
-  {R_START_M,            R_CCW_BEGIN_M,  R_START_M,    R_START | DIR_CCW},
-};
 #else
-#define R_CW_FINAL 0x1
-#define R_CW_BEGIN 0x2
-#define R_CW_NEXT 0x3
-#define R_CCW_BEGIN 0x4
-#define R_CCW_FINAL 0x5
-#define R_CCW_NEXT 0x6
-
-const unsigned char ttable[7][4] = {
-  // R_START
-  {R_START,    R_CW_BEGIN,  R_CCW_BEGIN, R_START},
-  // R_CW_FINAL
-  {R_CW_NEXT,  R_START,     R_CW_FINAL,  R_START | DIR_CW},
-  // R_CW_BEGIN
-  {R_CW_NEXT,  R_CW_BEGIN,  R_START,     R_START},
-  // R_CW_NEXT
-  {R_CW_NEXT,  R_CW_BEGIN,  R_CW_FINAL,  R_START},
-  // R_CCW_BEGIN
-  {R_CCW_NEXT, R_START,     R_CCW_BEGIN, R_START},
-  // R_CCW_FINAL
-  {R_CCW_NEXT, R_CCW_FINAL, R_START,     R_START | DIR_CCW},
-  // R_CCW_NEXT
-  {R_CCW_NEXT, R_CCW_FINAL, R_CCW_BEGIN, R_START},
+#include <Keyboard.h>
+// just some keys if we want to use the keyboard
+char keys[62] = {
+  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
+  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
 };
 #endif
 
-byte rowPins[NUMROWS] = {20, 19, 18};
-byte colPins[NUMCOLS] = {15, 14, 16, 10};
+// define the matrix pins
+#define MATRIX_ROWS 3
+#define MATRIX_COLUMNS 4
+byte rowPins[MATRIX_ROWS] = {20, 19, 18};
+byte colPins[MATRIX_COLUMNS] = {15, 14, 16, 10};
 
-Keypad buttbx = Keypad( makeKeymap(buttons), rowPins, colPins, NUMROWS, NUMCOLS);
+// fill matrix with values
+byte matrix[MATRIX_ROWS][MATRIX_COLUMNS] = {
+  { 0, 1, 2, 3},
+  { 4, 5, 6, 7},
+  { 8, 9,10,11},
+};
 
+// define the number of used buttons in our matrix
+#define PHYSICAL_BUTTONS 12
+
+// now define the rotaries (values are the used pins to read the data)
+#define ROTARIES 4
+RotaryEncoder rotaries[ROTARIES] = {
+  {1,0},
+  {2,3},
+  {4,5},
+  {6,7}
+};
+
+#ifdef ENABLE_DOUBLE_FUNCTION
+#define VIRTUAL_BUTTONS PHYSICAL_BUTTONS * 2
+#else
+#define VIRTUAL_BUTTONS PHYSICAL_BUTTONS
+#endif
+
+struct buttonstate
+{
+  bool hold;
+};
+buttonstate buttonstates[VIRTUAL_BUTTONS];
+
+Keypad button_box = Keypad(makeKeymap(matrix), rowPins, colPins, sizeof(rowPins), sizeof(colPins));
+
+#ifdef ENABLE_JOYSTICK
 Joystick_ Joystick(JOYSTICK_DEFAULT_REPORT_ID,
-                   JOYSTICK_TYPE_JOYSTICK, NUMBUTTONS, 0,
+                   JOYSTICK_TYPE_JOYSTICK, VIRTUAL_BUTTONS + (ROTARIES * 2), 0,
                    false, false, false, false, false, false,
                    false, false, false, false, false);
+#endif
 
 void setup()
 {
-  buttbx.setDebounceTime(100);
-  //buttbx.setHoldTime(0);
+  button_box.setDebounceTime(100);
+  #ifdef ENABLE_DOUBLE_FUNCTION
+  button_box.setHoldTime(750);
+  #endif
+  #ifdef ENABLE_JOYSTICK
   Joystick.begin();
-  rotary_init();
+  #endif
 }
 
 void loop()
@@ -110,56 +86,77 @@ void loop()
 }
 
 void CheckAllButtons(void) {
-  if (buttbx.getKeys())
+  if (button_box.getKeys())
   {
     for (int i = 0; i < LIST_MAX; i++)
     {
-      if ( buttbx.key[i].stateChanged )
+      if ( button_box.key[i].stateChanged )
       {
-        switch (buttbx.key[i].kstate)
+        switch (button_box.key[i].kstate)
         {
-          case PRESSED:
-          case HOLD:
-            Joystick.setButton(buttbx.key[i].kchar, 1);
-            break;
-          case RELEASED:
-          case IDLE:
-            Joystick.setButton(buttbx.key[i].kchar, 0);
-            break;
+          #ifdef ENABLE_DOUBLE_FUNCTION
+            case PRESSED:
+              break;
+            case HOLD:
+              buttonstates[button_box.key[i].kcode].hold = true;
+              pressButton(button_box.key[i].kcode + PHYSICAL_BUTTONS); // long press
+              break;
+            case RELEASED:
+                if (!buttonstates[button_box.key[i].kcode].hold)
+                  pressButton(button_box.key[i].kcode); // short press
+              break;
+            case IDLE:
+              buttonstates[button_box.key[i].kcode].hold = false;
+              break;
+          #else
+            case PRESSED:
+            case HOLD:
+              pressButton(button_box.key[i].kchar, true);
+              break;
+            case RELEASED:
+            case IDLE:
+              pressButton(button_box.key[i].kchar, false);
+              break;        
+          #endif
         }
       }
     }
   }
 }
 
-void rotary_init() {
-  for (int i = 0; i < NUMROTARIES; i++) {
-    pinMode(rotaries[i].pin1, INPUT);
-    pinMode(rotaries[i].pin2, INPUT);
-#ifdef ENABLE_PULLUPS
-    digitalWrite(rotaries[i].pin1, HIGH);
-    digitalWrite(rotaries[i].pin2, HIGH);
-#endif
-  }
-}
-
-unsigned char rotary_process(int _i)
-{
-  unsigned char pinstate = (digitalRead(rotaries[_i].pin2) << 1) | digitalRead(rotaries[_i].pin1);
-  rotaries[_i].state = ttable[rotaries[_i].state & 0xf][pinstate];
-  return (rotaries[_i].state & 0x30);
-}
 
 void CheckAllEncoders(void)
 {
-  for (int i = 0; i < NUMROTARIES; i++)
+  for (int i = 0; i < 4; i++)
   {
-    unsigned char result = rotary_process(i);
-    if (result == DIR_CCW) {
-      Joystick.setButton(rotaries[i].ccwchar, 1); delay(50); Joystick.setButton(rotaries[i].ccwchar, 0);
-    };
-    if (result == DIR_CW) {
-      Joystick.setButton(rotaries[i].cwchar, 1); delay(50); Joystick.setButton(rotaries[i].cwchar, 0);
+    rotaries[i].tick();
+    RotaryEncoder::Direction d = rotaries[i].getDirection();
+    if (d == RotaryEncoder::Direction::COUNTERCLOCKWISE)
+    {
+      pressButton(VIRTUAL_BUTTONS + (i*2));
+    }
+    else if (d == RotaryEncoder::Direction::CLOCKWISE)
+    {
+      pressButton(VIRTUAL_BUTTONS + (i*2) + 1);
     };
   }
+}
+
+void pressButton(int idx)
+{
+  pressButton(idx, true);
+  delay(50);
+  pressButton(idx, false);
+}
+
+void pressButton(int idx, bool down)
+{
+  #ifdef ENABLE_JOYSTICK
+  Joystick.setButton(idx, down ? 1 : 0);
+  #else
+  if (down)
+    Keyboard.press(keys[idx]);
+  else
+    Keyboard.release(keys[idx]);
+  #endif
 }
