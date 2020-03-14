@@ -14,12 +14,6 @@
 #include <Joystick.h>
 #else
 #include <Keyboard.h>
-// just some keys if we want to use the keyboard
-char keys[62] = {
-  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z',
-  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z',
-  '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'
-};
 #endif
 
 // define the matrix pins
@@ -29,6 +23,7 @@ byte rowPins[MATRIX_ROWS] = {20, 19, 18};
 byte colPins[MATRIX_COLUMNS] = {15, 14, 16, 10};
 
 // fill matrix with values
+// TODO: this is only needed to initialize the keypad and should be created by a function...
 byte matrix[MATRIX_ROWS][MATRIX_COLUMNS] = {
   { 0, 1, 2, 3},
   { 4, 5, 6, 7},
@@ -53,11 +48,16 @@ RotaryEncoder rotaries[ROTARIES] = {
 #define VIRTUAL_BUTTONS PHYSICAL_BUTTONS
 #endif
 
-struct buttonstate
-{
-  bool hold;
+// the keys to send if we want to use the keyboard
+// count should be twice the count of your physical buttons plus two times (left and right direction) of your rotary count
+// first part is for short presses and the second one for long presses
+char KEYBOARD_KEYS[VIRTUAL_BUTTONS + (ROTARIES * 2)] = {
+  'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l',
+  'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L',
+  '0', '1', '2', '3', '4', '5', '6', '7'
 };
-buttonstate buttonstates[VIRTUAL_BUTTONS];
+
+bool button_hold_states[VIRTUAL_BUTTONS];
 
 Keypad button_box = Keypad(makeKeymap(matrix), rowPins, colPins, sizeof(rowPins), sizeof(colPins));
 
@@ -72,7 +72,7 @@ void setup()
 {
   button_box.setDebounceTime(100);
   #ifdef ENABLE_DOUBLE_FUNCTION
-  button_box.setHoldTime(750);
+  button_box.setHoldTime(500);
   #endif
   #ifdef ENABLE_JOYSTICK
   Joystick.begin();
@@ -98,15 +98,17 @@ void CheckAllButtons(void) {
             case PRESSED:
               break;
             case HOLD:
-              buttonstates[button_box.key[i].kcode].hold = true;
-              pressButton(button_box.key[i].kcode + PHYSICAL_BUTTONS); // long press
+              button_hold_states[button_box.key[i].kcode] = true;
+              pressButton(button_box.key[i].kcode + PHYSICAL_BUTTONS, true); // long press
               break;
             case RELEASED:
-                if (!buttonstates[button_box.key[i].kcode].hold)
+                if (button_hold_states[button_box.key[i].kcode])
+                  pressButton(button_box.key[i].kcode + PHYSICAL_BUTTONS, false); // end long press  
+                else
                   pressButton(button_box.key[i].kcode); // short press
               break;
             case IDLE:
-              buttonstates[button_box.key[i].kcode].hold = false;
+              button_hold_states[button_box.key[i].kcode] = false;
               break;
           #else
             case PRESSED:
@@ -127,7 +129,7 @@ void CheckAllButtons(void) {
 
 void CheckAllEncoders(void)
 {
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < ROTARIES; i++)
   {
     rotaries[i].tick();
     RotaryEncoder::Direction d = rotaries[i].getDirection();
@@ -155,8 +157,8 @@ void pressButton(int idx, bool down)
   Joystick.setButton(idx, down ? 1 : 0);
   #else
   if (down)
-    Keyboard.press(keys[idx]);
+    Keyboard.press(KEYBOARD_KEYS[idx]);
   else
-    Keyboard.release(keys[idx]);
+    Keyboard.release(KEYBOARD_KEYS[idx]);
   #endif
 }
