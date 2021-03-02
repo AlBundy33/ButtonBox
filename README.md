@@ -31,3 +31,11 @@ To install Keypad.h see also https://forum.arduino.cc/index.php?topic=511429.0
 
 For PS4 and XBox compatibility it seems that using Keyboard.h is better than Joystick.h
 https://forums.codemasters.com/topic/41266-f-yeahdiy-button-box-ps4-done-and-working/
+
+For platformio you can define dependencies in platformio.ini
+```
+lib_deps =
+  mheironimus/Joystick
+  chris--a/Keypad
+  mathertel/RotaryEncoder
+```
