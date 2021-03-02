@@ -2,7 +2,9 @@ Source code for my button box with an Arduino Pro Micro
 
 The button box constis of a button matrix with 3 rows and 4 buttons per row.
 
-the first row contains 4 rotary encoders.
+The first row contains 4 rotary encoders wih push funcion.
+
+Each push button simulates two buttons - one for short press and the other for long press.
 
 so button numbers are
 ```
@@ -10,10 +12,16 @@ so button numbers are
  5,  6,  7,  8
  9, 10, 11, 12
 ```
-followed by
+and some extra virtual buttons for long button presses
 ```
 13, 14, 15, 16
 17, 18, 19, 20
+21, 22, 23, 24
+```
+followed by buttons for the rotaries
+```
+25, 26, 27, 28
+29, 30, 31, 32
 ```
 where these buttons are
 - rotary 1 left, right
